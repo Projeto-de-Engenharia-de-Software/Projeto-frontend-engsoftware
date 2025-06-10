@@ -87,9 +87,9 @@ col1, col2, col3 = st.columns([1,2,3])
 with col1:
     
     if st.button("Cadastrar"):
-        st.switch_page("")
+        st.switch_page("pages/quadro_geral.py")
 
 with col2:
     if st.button("Já Possui Cadastro?"):
-         st.switch_page("pages/1_Login.py")
-        # lógica de recuperação...
+         st.switch_page("pages/_login.py")
+        

@@ -65,6 +65,6 @@ with col2:
         # lógica de recuperação...
 
 with col3:
-    if st.button("Não possui cadastro?", key="btn_cadastro_login"): # Adicionei key
-        # AQUI É A MUDANÇA PRINCIPAL: PASSE APENAS O NOME DO ARQUIVO SEM O ".py"
-        st.switch_page("2_Cadastrar") # Correto! Redireciona para pages/2_Cadastrar.py
+    if st.button("Não possui cadastro?", key="btn_cadastro_login"): 
+     
+        st.switch_page("pages/_cadastrar.py") 
