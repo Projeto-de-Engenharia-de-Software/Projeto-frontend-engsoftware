@@ -2,7 +2,9 @@ import streamlit as st
 
 
 # Oculta a barra lateral e menu padrão (isso pode ser sobrescrito pelo Home.py se ele definir algo)
-st.set_page_config(page_title="Nexus - Login", layout="centered") 
+st.set_page_config(page_title="Nexus - Login", layout="centered", initial_sidebar_state="collapsed")
+
+
 
 
 # Aplica estilo customizado (CSS) - Mantenha este bloco ou mova-o para tema.py
