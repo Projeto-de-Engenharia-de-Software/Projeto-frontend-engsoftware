@@ -1,13 +1,13 @@
 import streamlit as st
-from streamlit_extras.switch_page_button import switch_page
-from tema import aplicar_tema
 
 # Oculta a barra lateral e menu padrão
 st.set_page_config(page_title="Nexus", layout="centered")
-aplicar_tema()
+
 # Aplica estilo customizado (CSS)
 st.markdown("""
+            
     <style>
+            
     body {
         background-color: white;
         font-family: 'sans-serif';
@@ -30,34 +30,34 @@ st.markdown("""
         text-align: center;
     }
 
-    .btn-login {
-        background-color: black;
-        color: white;
-        padding: 10px 30px;
-        margin: 10px 5px;
-        border: none;
-        border-radius: 5px;
-        font-weight: bold;
-        cursor: pointer;
+    
+             section[data-testid="stSidebar"] {
+        display: none !important;
     }
 
-    .btn-login:hover {
-        background-color: #333;
+    /* Remove o botão de recolher/expandir a sidebar (☰) */
+    div[data-testid="collapsedControl"] {
+        display: none !important;
     }
 
     </style>
+                        
 """, unsafe_allow_html=True)
 
 
-# Exibe a imagem no topo (ondas vermelhas/azuis)
-st.image(r"C:\Users\ruang\Documents\aplicativos\NexusFrontEnd\MeuApp\pages\image.png", use_container_width=True)
+st.image("pages/image.png", use_container_width=True)
 
+st.markdown('<br><br>', unsafe_allow_html=True)
 
-st.title("Bem Vindo a NEXUS ")
-st.write("Bem-vindo ao aplicativo Nexus!")
+st.markdown('<h1 class="title">Bem Vindo ao Nexus</h1>', unsafe_allow_html=True)
+st.markdown('<br><br><br>', unsafe_allow_html=True)
 
-st.write("Use o menu lateral para navegar entre as páginas.")
+left,center,right = st.columns([8,6,2])
 
+with left:
+    if st.button("Não Possui Cadastro?"):
+        st.switch_page("pages/_cadastrar.py")
+with right:
 
-if st.button("Não possuí cadastro?"):
-   st.switch_page("2_Cadastrar")
+    if st.button("Entrar"):
+        st.switch_page("pages/_login.py")
