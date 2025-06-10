@@ -1,5 +1,4 @@
 # C:\Users\ruang\Documents\aplicativos\NexusFrontEnd\MeuApp\pages\1_Login.py
-
 import streamlit as st
 # Remova esta linha se você não a estiver usando mais: from streamlit_extras.switch_page_button import switch_page
 from tema import aplicar_tema
@@ -56,7 +55,7 @@ st.markdown("""
 # OU, se a imagem está na pasta 'pages', você pode precisar de um caminho relativo específico
 # ao script atual, mas o ideal é que assets estejam fora de 'pages'.
 # Para a sua estrutura, se 'image.png' está dentro de 'pages', você pode tentar:
-st.image("pages/image.png", use_container_width=True) # ou apenas "image.png" se Streamlit mapeia dentro de pages
+st.image("image.png", use_container_width=True) # ou apenas "image.png" se Streamlit mapeia dentro de pages
 
 # Título principal
 st.markdown('<div class="title">Nexus</div>', unsafe_allow_html=True)

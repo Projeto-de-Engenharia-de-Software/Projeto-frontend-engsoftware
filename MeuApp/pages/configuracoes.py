@@ -1,6 +1,7 @@
 import streamlit as st
+from sidebar_quadro import mapa_interativo
 
-
+st.image("image.png", use_container_width=True)
 
 left, center, right = st.columns([3, 5, 2])
 
@@ -8,11 +9,12 @@ left, center, right = st.columns([3, 5, 2])
 with center:
         st.title("Configurações")
 
-nova_senha = st.text_input("Nova Senha")
+with st.container():
+    nova_senha = st.text_input("Nova Senha")
 
-confirmar_senha = st.text_input("Confirmar Nova Senha")
+    confirmar_senha = st.text_input("Confirmar Nova Senha")
 
-novo_user = st.text_input("Novo Usuário")
+    novo_user = st.text_input("Novo Usuário")
 
 salvar_btn = st.button("Salvar")
 
