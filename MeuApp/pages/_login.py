@@ -1,10 +1,8 @@
-# C:\Users\ruang\Documents\aplicativos\NexusFrontEnd\MeuApp\pages\1_Login.py
 import streamlit as st
-# Remova esta linha se você não a estiver usando mais: from streamlit_extras.switch_page_button import switch_page
 
 
 # Oculta a barra lateral e menu padrão (isso pode ser sobrescrito pelo Home.py se ele definir algo)
-st.set_page_config(page_title="Nexus - Login", layout="centered") # Ajustei o título para ser mais específico
+st.set_page_config(page_title="Nexus - Login", layout="centered") 
 
 
 # Aplica estilo customizado (CSS) - Mantenha este bloco ou mova-o para tema.py

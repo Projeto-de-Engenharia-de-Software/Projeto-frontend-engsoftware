@@ -1,7 +1,7 @@
 import streamlit as st
 
 
-st.image("image.png", use_container_width=True)
+st.image("pages/image.png", use_container_width=True)
 
 left, center, right = st.columns([3, 5, 2])
 
@@ -19,4 +19,5 @@ with st.container():
 salvar_btn = st.button("Salvar")
 
 homepage_btn = st.button("Homepage")
-
+if homepage_btn:
+      st.switch_page("pages/_homepage.py")

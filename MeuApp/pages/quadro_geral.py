@@ -48,7 +48,7 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
+st.image("pages/image.png", use_container_width=True) 
 # Inicializa o estado da página
 if 'page' not in st.session_state:
     st.session_state.page = '📊 Quadro Geral'
@@ -160,11 +160,12 @@ elif st.session_state.page == "🗺️ Mapa Interativo":
 
     # 📌 Exibir no Streamlit
     folium_static(m)
+
+homepage_btn = st.button("Homepage")
+if homepage_btn:
+      st.switch_page("pages/_homepage.py")
         
-        
 
 
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Gerar dados fictícios
-
+  
 

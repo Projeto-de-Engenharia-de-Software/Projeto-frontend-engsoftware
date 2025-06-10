@@ -19,3 +19,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+homepage_btn = st.button("Homepage")
+if homepage_btn:
+      st.switch_page("pages/_homepage.py")
