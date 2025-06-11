@@ -19,7 +19,7 @@ def carregar_dados():
 st.set_page_config(
     page_title="Nexus - Quadro Geral",
     page_icon=":chart_with_upwards_trend:",
-    layout="wide"
+    layout="wide",
 )
 
 # Remove toda a navegação automática da sidebar com CSS
