@@ -4,14 +4,12 @@ st.title("Mapa Interativo")
 
 st.markdown("""
 <style>
-    /* Esconde itens do menu lateral por texto ou posição */
     div[data-testid="stSidebarNav"] ul li a[href*="_login.py"],
     div[data-testid="stSidebarNav"] ul li a[href*="_cadastrar.py"],
             div[data-testid="stSidebarNav"] ul li a[href*="Home.py"] {
         display: none !important;
     }
     
-    /* Opcional: Remove o espaçamento dos itens ocultos */
     div[data-testid="stSidebarNav"] ul li:nth-child(2),
     div[data-testid="stSidebarNav"] ul li:nth-child(4),
             div[data-testid="stSidebarNav"] ul li:nth-child(1) {

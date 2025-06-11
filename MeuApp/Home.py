@@ -1,9 +1,7 @@
 import streamlit as st
 
-# Oculta a barra lateral e menu padrão
 st.set_page_config(page_title="Nexus", layout="centered")
 
-# Aplica estilo customizado (CSS)
 st.markdown("""
             
     <style>
@@ -35,7 +33,6 @@ st.markdown("""
         display: none !important;
     }
 
-    /* Remove o botão de recolher/expandir a sidebar (☰) */
     div[data-testid="collapsedControl"] {
         display: none !important;
     }

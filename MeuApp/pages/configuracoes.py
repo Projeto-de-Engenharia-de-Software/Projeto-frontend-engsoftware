@@ -8,9 +8,11 @@ left, center, right = st.columns([3, 5, 2])
 
 
 with center:
+        
         st.title("Configurações")
 
 with st.container():
+
     nova_senha = st.text_input("Nova Senha")
 
     confirmar_senha = st.text_input("Confirmar Nova Senha")
@@ -20,5 +22,7 @@ with st.container():
 salvar_btn = st.button("Salvar")
 
 homepage_btn = st.button("Homepage")
+
 if homepage_btn:
+      
       st.switch_page("pages/_homepage.py")

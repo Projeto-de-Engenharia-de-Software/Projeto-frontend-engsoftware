@@ -30,7 +30,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Layout com colunas para centralizar
 col1, col2, col3 = st.columns([2, 3, 2])
 
 with col2:
