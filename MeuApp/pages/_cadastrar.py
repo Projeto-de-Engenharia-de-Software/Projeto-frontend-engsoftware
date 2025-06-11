@@ -1,4 +1,51 @@
 import streamlit as st
+import requests
+import json
+
+# Configurações da API
+API_BASE_URL = "http://127.0.0.1:8000/api/" 
+
+def make_authenticated_request(method, url, headers=None, params=None, json_data=None):
+    if 'auth_token' not in st.session_state:
+        return None # Não há token, a requisição não será autenticada
+    
+    auth_headers = {
+        "Authorization": f"Token {st.session_state.auth_token}",
+        "Content-Type": "application/json"
+    }
+    if headers: # Mescla com headers adicionais se houver
+        auth_headers.update(headers)
+
+    try:
+        if method.lower() == 'get':
+            response = requests.get(url, headers=auth_headers, params=params)
+        elif method.lower() == 'post':
+            response = requests.post(url, headers=auth_headers, json=json_data)
+        # ... outras requisições (put, delete) ...
+
+        response.raise_for_status() # Lança erro para status 4xx/5xx
+        return response
+    except requests.exceptions.RequestException as e:
+        st.error(f"Erro na requisição API: {e}")
+        return None
+
+def registrar_usuario(data):
+    try:
+        # A API de registro não precisa de autenticação inicial
+        response = requests.post(f"{API_BASE_URL}register/", json=data) 
+        response.raise_for_status() # Lança erro para status 4xx/5xx
+
+        st.rerun() # Recarrega a página
+    except requests.exceptions.RequestException as e:
+        error_message = "Erro no cadastro. Por favor, tente novamente."
+        if response is not None:
+            try:
+                error_details = response.json()
+                for field, errors in error_details.items():
+                    error_message += f"\n- {field}: {', '.join(errors)}"
+            except json.JSONDecodeError:
+                error_message += f"\nDetalhes: {response.text}"
+        st.error(error_message)
 
 
 # Oculta a barra lateral e menu padrão
@@ -70,6 +117,7 @@ st.markdown('<div class="title">Nexus</div>', unsafe_allow_html=True)
 st.subheader("Cadastro")
 
 col1, col2= st.columns(2)
+dados = {}
 
 # Caixa de login
 with st.container():
@@ -83,15 +131,31 @@ with st.container():
     unidade_de_saude = col2.text_input("Unidade de Saúde", placeholder= "Selecione sua Unidade de Saúde")
     especialidade = col2.text_input("Especialidade", placeholder="Digite a sua Especialidade")
 
+    dados = {
+        "username": username,
+        "password": senha,
+        "confirm_password": confirmar_senha,
+        "full_name": nome_completo,
+        "especialidade": especialidade,
+        "unidade_de_saude": unidade_de_saude,
+        "email": email,
+        "perfil": perfil
+        }
+
 
 col1, col2, col3 = st.columns([1,2,3])
 
-with col1:
-    
-    if st.button("Cadastrar"):
+if col1.button("Cadastrar"):
+    try: 
+        registrar_usuario(dados)
         st.switch_page("pages/quadro_geral.py")
+    except:
+        st.warning('Corrija seus dados :)', icon="⚠️")
+        
+        
 
 with col2:
     if st.button("Já Possui Cadastro?"):
          st.switch_page("pages/_login.py")
+
         
