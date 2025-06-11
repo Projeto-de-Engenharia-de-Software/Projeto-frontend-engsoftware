@@ -167,6 +167,10 @@ with st.container():
 
 col1, col2, col3 = st.columns([1,2,3])
 
+if col2.button("Já possui Cadastro?"):
+    
+    st.switch_page("pages/_login.py")
+
 if col1.button("Cadastrar"):
 
     sucesso = registrar_usuario(dados)
@@ -177,5 +181,5 @@ if col1.button("Cadastrar"):
         st.switch_page("pages/_login.py")
 
     else:
-        
+
         st.warning("Corrija seus dados :)", icon="⚠️")
