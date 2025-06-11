@@ -10,7 +10,7 @@ import altair as alt
 
 @st.cache_data
 def carregar_dados():
-    caminho = r"C:\Users\pabol\Desktop\Front_End_Nexus\Projeto-frontend-engsoftware\MeuApp\pages\sinannet_cnv_violepe231354143_208_128_99.csv"
+    caminho = "pages/sinannet_cnv_violepe231354143_208_128_99.csv"
     return pd.read_csv(caminho, sep=";", encoding="iso-8859-1", skiprows=3)
 
 
