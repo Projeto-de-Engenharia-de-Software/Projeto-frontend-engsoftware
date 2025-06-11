@@ -109,6 +109,8 @@ if st.session_state.page == "📊 Quadro Geral":
         title="Número de Casos por Mês e Macrorregião (2024)"
     )
 
+    st.dataframe(df_filtrado)
+
     st.altair_chart(grafico, use_container_width=True)
 
     def calcular_variacao(df, inicio, fim):

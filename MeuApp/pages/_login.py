@@ -5,7 +5,7 @@ def make_authenticated_request(method, url, headers=None, params=None, json_data
 
     if 'auth_token' not in st.session_state:
 
-        return None # Não há token, a requisição não será autenticada
+        return None 
     
     auth_headers = {
 
@@ -14,7 +14,7 @@ def make_authenticated_request(method, url, headers=None, params=None, json_data
 
     }
 
-    if headers: # Mescla com headers adicionais se houver
+    if headers: 
 
         auth_headers.update(headers)
 
@@ -27,9 +27,9 @@ def make_authenticated_request(method, url, headers=None, params=None, json_data
         elif method.lower() == 'post':
 
             response = requests.post(url, headers=auth_headers, json=json_data)
-        # ... outras requisições (put, delete) ...
+        
 
-        response.raise_for_status() # Lança erro para status 4xx/5xx
+        response.raise_for_status() 
 
         return response
     
@@ -50,15 +50,15 @@ def fazer_login(username, password):
             "password": password
         })
 
-        response.raise_for_status()  # Vai lançar erro se status for 4xx/5xx
+        response.raise_for_status()  
 
         token = response.json().get("token")
 
         if token:
 
-            st.session_state.auth_token = token  # Salva token para uso posterior
+            st.session_state.auth_token = token 
             st.success("Login realizado com sucesso!")
-            st.switch_page("pages/quadro_geral.py")  # Redireciona para a próxima página
+            st.switch_page("pages/quadro_geral.py")  
 
         else:
 
@@ -134,12 +134,18 @@ col1, col2, col3 = st.columns([1,2,4])
 with col1:
 
     if st.button("Entrar", key="btn_entrar_login"):
+
         sucesso = fazer_login(username,senha)
+
         if sucesso:
+
             st.success("Login realizado com sucesso!")
             st.switch_page("pages/quadro_geral.py")
+
         else:
+
             st.warning("Corrija seus dados :)", icon="⚠️")
+
 with col2:
 
     if st.button("Esqueci minha senha", key="btn_esqueci_login"):
