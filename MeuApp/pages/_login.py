@@ -61,8 +61,7 @@ with col1:
         st.switch_page("pages/quadro_geral.py") # Redireciona para a página principal Home.py
 with col2:
     if st.button("Esqueci minha senha", key="btn_esqueci_login"): # Adicionei key
-        st.warning("Redirecionar para recuperação de senha")
-        # lógica de recuperação...
+        st.switch_page("pages/_recuperacao_senha.py")
 
 with col3:
     if st.button("Não possui cadastro?", key="btn_cadastro_login"): 
