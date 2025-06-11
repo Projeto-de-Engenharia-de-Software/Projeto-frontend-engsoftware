@@ -6,30 +6,13 @@ from datetime import datetime
 from datetime import timedelta
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
+import altair as alt
 
 @st.cache_data
-def carregar_dados_ficticios():
-    datas = pd.date_range(start="2021-01-01", end="2022-12-31", freq="M")
-    estados = [
-        "Sergipe", "Minas Gerais", "Alagoas", "Piauí", "Bahia",
-        "Pará", "Goiás", "São Paulo", "Rio de Janeiro", "Pernambuco",
-        "Mato Grosso", "Santa Catarina", "Paraná", "Ceará"
-    ]
-    dados = {
-        "Data": [],
-        "Estado": [],
-        "Casos": []
-    }
+def carregar_dados():
+    caminho = r"C:\Users\pabol\Desktop\Front_End_Nexus\Projeto-frontend-engsoftware\MeuApp\pages\sinannet_cnv_violepe231354143_208_128_99.csv"
+    return pd.read_csv(caminho, sep=";", encoding="iso-8859-1", skiprows=3)
 
-    for estado in estados:
-        for data in datas:
-            casos = np.random.randint(100, 1000)
-            dados["Data"].append(data)
-            dados["Estado"].append(estado)
-            dados["Casos"].append(casos)
-
-    df = pd.DataFrame(dados)
-    return df
 
 
 # Configuração da página
@@ -63,48 +46,79 @@ with st.sidebar:
 if st.session_state.page == "📊 Quadro Geral":
     st.markdown("<h1 style='text-align: center;'>Quadro Geral de Casos</h1>", unsafe_allow_html=True)
     # Aqui vai o conteúdo do Quadro Geral
-    dados = carregar_dados_ficticios()
+    # Carrega os dados
+    dados = carregar_dados()
 
-    # Título
+    # Renomear primeira coluna para 'Macrorregião'
+    dados.rename(columns={dados.columns[0]: "Macrorregião"}, inplace=True)
 
-    st.write("O gráfico abaixo representa a evolução dos casos ao longo do tempo.")
+    # Remove a coluna 'Total', se existir
+    if 'Total' in dados.columns:
+        dados.drop(columns=['Total'], inplace=True)
 
-    # Filtros laterais
+    # Converte para formato longo
+    df_meltado = dados.melt(id_vars=["Macrorregião"], var_name="Mês", value_name="Casos")
+
+    # Remove espaços em branco da coluna 'Mês' e converte os valores para numérico
+    df_meltado["Mês"] = df_meltado["Mês"].str.strip()
+    df_meltado["Casos"] = pd.to_numeric(df_meltado["Casos"], errors='coerce')
+
+    # Mapeia os nomes dos meses para números e cria uma coluna de datas
+    mes_para_numero = {
+        "Jan": 1, "Fev": 2, "Mar": 3, "Abr": 4, "Mai": 5, "Jun": 6,
+        "Jul": 7, "Ago": 8, "Set": 9, "Out": 10, "Nov": 11, "Dez": 12
+    }
+    # Converte 'Mês' para string antes do map para evitar problemas com Categorical
+    df_meltado["Data"] = df_meltado["Mês"].astype(str).map(lambda m: datetime(2024, mes_para_numero[m], 1))
+
+    # Ordena os meses corretamente e deixa a coluna categórica para o gráfico
+    ordem_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", 
+                "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    df_meltado["Mês"] = pd.Categorical(df_meltado["Mês"], categories=ordem_meses, ordered=True)
+
+    # Sidebar - Filtros
     st.sidebar.header("Filtros")
+    regioes_disponiveis = df_meltado["Macrorregião"].unique().tolist()
+    regioes_selecionadas = st.sidebar.multiselect("Selecione as macrorregiões", regioes_disponiveis, default=regioes_disponiveis)
 
-    # Filtro de estados
-    estados = dados["Estado"].unique()
-    estados_selecionados = st.sidebar.multiselect("Selecione os estados", estados, default=["São Paulo", "Bahia"])
+    # Lista de datas mensais para slider
+    meses_2024 = [datetime(2024, m, 1) for m in range(1, 13)]
 
-    # Filtro de período
-    datas = dados["Data"]
-    data_inicial = datas.min().to_pydatetime()
-    data_final = datas.max().to_pydatetime()
-    intervalo = st.slider("Período", min_value=data_inicial, max_value=data_final,
-                                value=(data_inicial, data_final), step=timedelta(days=30))
+    # Slider de intervalo de meses
+    intervalo_meses = st.sidebar.slider(
+        "Selecione o intervalo de meses",
+        min_value=meses_2024[0],
+        max_value=meses_2024[-1],
+        value=(meses_2024[0], meses_2024[-1]),
+        format="MMM",
+        step=timedelta(days=31)
+    )
 
-    # Filtrar dados
-    dados_filtrados = dados[
-        (dados["Estado"].isin(estados_selecionados)) &
-        (dados["Data"] >= intervalo[0]) &
-        (dados["Data"] <= intervalo[1])
+    # Filtra os dados pela região e intervalo de datas
+    df_filtrado = df_meltado[
+        (df_meltado["Macrorregião"].isin(regioes_selecionadas)) &
+        (df_meltado["Data"] >= intervalo_meses[0]) &
+        (df_meltado["Data"] <= intervalo_meses[1])
     ]
 
-    # Pivotar dados para gráfico de linhas
-    df_pivot = dados_filtrados.pivot(index="Data", columns="Estado", values="Casos")
+    # Título principal
+    st.title("Quadro Geral de Casos de Violência")
+    st.markdown("Este gráfico mostra a distribuição de casos por mês nas macrorregiões de Pernambuco em 2024.")
 
-    # Gráfico de linha
-    st.line_chart(df_pivot)
+    # Gráfico interativo com meses em português no eixo X
+    grafico = alt.Chart(df_filtrado).mark_line(point=True).encode(
+        x=alt.X("Mês:N", sort=ordem_meses, title="Mês"),
+        y=alt.Y("Casos:Q", title="Número de Casos"),
+        color="Macrorregião:N",
+        tooltip=["Macrorregião", "Mês", "Casos"]
+    ).properties(
+        width=800,
+        height=500,
+        title="Número de Casos por Mês e Macrorregião (2024)"
+    )
 
-    # Performance de crescimento por estado
-    st.write("### Variação no número de casos")
-
-    for estado in estados_selecionados:
-        serie = df_pivot[estado].dropna()
-        if len(serie) > 1:
-            crescimento = (serie.iloc[-1] / serie.iloc[0] - 1) * 100
-            st.write(f"**{estado}**: {crescimento:.2f}% de variação no período")
-        
+    # Exibe o gráfico
+    st.altair_chart(grafico, use_container_width=True)
 
 elif st.session_state.page == "🗺️ Mapa Interativo":
     st.markdown("<h1 style='text-align: center;'>Mapa Interativo</h1>", unsafe_allow_html=True)
