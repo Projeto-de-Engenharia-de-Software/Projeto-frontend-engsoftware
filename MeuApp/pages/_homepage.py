@@ -8,8 +8,9 @@ st.set_page_config(
 )
 
 st.image("pages/image.png", use_container_width=True) 
+col1, col2, col3 = st.columns([2, 3, 2])
+col2.title("Bem Vindo!")
 
-st.title("Bem Vindo")
 
 st.markdown("""
     <style>
@@ -35,7 +36,17 @@ col1, col2, col3 = st.columns([2, 3, 2])
 with col2:
     
     st.markdown('<label class="select-label">🌐 Escolha uma página:</label>', unsafe_allow_html=True)
-    pagina = st.selectbox("", ["🏠 Início", "📊 Quadro Geral", "🗺️ Mapa Interativo"])
+    pagina = st.selectbox("", ["📊 Quadro Geral", "🗺️ Mapa Interativo" , "⚙️ Configurações"])
     st.markdown('</div>', unsafe_allow_html=True)
 
-st.write(f"Você selecionou: **{pagina}**")
+selecionar_pag = col2.button('Selecionar Página')
+
+if selecionar_pag and pagina=="📊 Quadro Geral":
+    st.switch_page("pages/quadro_geral.py")
+
+if selecionar_pag and pagina=="🗺️ Mapa Interativo":
+    st.switch_page("pages/mapa_interativo.py")   
+
+if selecionar_pag and pagina=="⚙️ Configurações":
+    st.switch_page("pages/configuracoes.py")  
+    
