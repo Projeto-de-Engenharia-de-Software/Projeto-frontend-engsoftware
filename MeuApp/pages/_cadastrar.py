@@ -75,11 +75,13 @@ col1, col2= st.columns(2)
 with st.container():
   
     email = col1.text_input("E-mail", placeholder="Digite seu e-mail")
+    username = col1.text_input("Nome de Usuário", placeholder="Digite seu Nome de Usuário")
     senha = col1.text_input("Senha", type="password", placeholder="Digite sua senha")
     confirmar_senha = col1.text_input("Confirmar Senha", type= "password", placeholder="Confirme sua Senha")
-    nome_completo = col2.text_input("Nome Completo", placeholder= "Digite Seu Nome Completo")
-    Especialidade = col2.selectbox(label="Gestor", options= ["Gestor de Saúde","Agente de Saúde"])
+    nome_completo = col2.text_input("Nome Completo", placeholder= "Digite seu Nome Completo")
+    perfil = col2.selectbox(label="Perfil", options= ["Gestor de Saúde","Agente de Saúde"])
     unidade_de_saude = col2.text_input("Unidade de Saúde", placeholder= "Selecione sua Unidade de Saúde")
+    especialidade = col2.text_input("Especialidade", placeholder="Digite a sua Especialidade")
 
 
 col1, col2, col3 = st.columns([1,2,3])
