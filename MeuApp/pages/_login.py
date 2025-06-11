@@ -131,20 +131,20 @@ with st.container():
 
 col1, col2, col3 = st.columns([1,2,4])
 
-with col1:
 
-    if st.button("Entrar", key="btn_entrar_login"):
 
-        sucesso = fazer_login(username,senha)
+if col1.button("Entrar", key="btn_entrar_login"):
 
-        if sucesso:
+    sucesso = fazer_login(username,senha)
 
-            st.success("Login realizado com sucesso!")
-            st.switch_page("pages/quadro_geral.py")
+    if sucesso:
 
-        else:
+        st.success("Login realizado com sucesso!")
+        st.switch_page("pages/quadro_geral.py")
 
-            st.warning("Corrija seus dados :)", icon="⚠️")
+    else:
+
+        st.warning("Corrija seus dados :)", icon="⚠️")
 
 with col2:
 
