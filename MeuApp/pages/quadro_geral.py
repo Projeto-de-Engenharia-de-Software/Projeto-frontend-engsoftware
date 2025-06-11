@@ -49,7 +49,7 @@ if st.session_state.page == "📊 Quadro Geral":
     # Carrega os dados
     dados = carregar_dados()
 
-    # Renomear primeira coluna para 'Macrorregião'
+# Renomear primeira coluna para 'Macrorregião'
     dados.rename(columns={dados.columns[0]: "Macrorregião"}, inplace=True)
 
     # Remove a coluna 'Total', se existir
@@ -68,7 +68,6 @@ if st.session_state.page == "📊 Quadro Geral":
         "Jan": 1, "Fev": 2, "Mar": 3, "Abr": 4, "Mai": 5, "Jun": 6,
         "Jul": 7, "Ago": 8, "Set": 9, "Out": 10, "Nov": 11, "Dez": 12
     }
-    # Converte 'Mês' para string antes do map para evitar problemas com Categorical
     df_meltado["Data"] = df_meltado["Mês"].astype(str).map(lambda m: datetime(2024, mes_para_numero[m], 1))
 
     # Ordena os meses corretamente e deixa a coluna categórica para o gráfico
@@ -119,6 +118,52 @@ if st.session_state.page == "📊 Quadro Geral":
 
     # Exibe o gráfico
     st.altair_chart(grafico, use_container_width=True)
+
+    # --- Cálculo da variação percentual ---
+
+    # Função para calcular variação percentual entre primeiro e último mês do intervalo para cada região
+    def calcular_variacao(df, inicio, fim):
+        resultados = []
+        for regiao in regioes_selecionadas:
+            df_regiao = df[(df["Macrorregião"] == regiao) & (df["Data"] >= inicio) & (df["Data"] <= fim)]
+
+            if df_regiao.empty:
+                continue
+
+            # Ordena por Data para pegar valores extremos
+            df_regiao = df_regiao.sort_values("Data")
+
+            valor_inicio = df_regiao.iloc[0]["Casos"]
+            valor_fim = df_regiao.iloc[-1]["Casos"]
+
+            # Tratar casos com zero para evitar divisão por zero
+            if pd.isna(valor_inicio) or valor_inicio == 0:
+                variacao = None
+            else:
+                variacao = ((valor_fim - valor_inicio) / valor_inicio) * 100
+
+            resultados.append((regiao, variacao))
+        return resultados
+
+    variacoes = calcular_variacao(df_filtrado, intervalo_meses[0], intervalo_meses[1])
+
+    # Exibe o texto com variação percentual
+    st.markdown("### Variação percentual de casos entre o primeiro e último mês selecionados por macrorregião:")
+
+    if not variacoes:
+        st.write("Nenhum dado disponível para as regiões e período selecionados.")
+    else:
+        for regiao, variacao in variacoes:
+            if variacao is None:
+                texto = f"- **{regiao}**: dados insuficientes para calcular variação."
+            else:
+                if variacao > 0:
+                    texto = f"- **{regiao}**: aumento de {variacao:.2f}% nos casos."
+                elif variacao < 0:
+                    texto = f"- **{regiao}**: redução de {abs(variacao):.2f}% nos casos."
+                else:
+                    texto = f"- **{regiao}**: sem variação nos casos."
+            st.write(texto)
 
 elif st.session_state.page == "🗺️ Mapa Interativo":
     st.markdown("<h1 style='text-align: center;'>Mapa Interativo</h1>", unsafe_allow_html=True)
