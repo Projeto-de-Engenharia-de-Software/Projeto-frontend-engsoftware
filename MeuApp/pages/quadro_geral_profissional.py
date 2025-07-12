@@ -4,8 +4,6 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 from datetime import timedelta
-from folium.plugins import HeatMap
-from streamlit_folium import folium_static
 import altair as alt
 
 
@@ -36,35 +34,6 @@ st.markdown("""
 
 st.image("pages/image.png", use_container_width=True) 
 
-if 'nomes' not in st.session_state:
-
-    st.session_state.nomes = pd.DataFrame({
-            'Membros': [
-                'Juan Pabollo', 'Vitor Barros', 'Wellington Viana',
-                'Ruan Rodrigues', 'Samara Accioly', 'Gabriel Farias'
-            ],
-            'Usuário': [
-                "juansilva", "vBarros", "wViana03",
-                "rodrigues01", "samaraaccioly", "gabrielF"
-            ],
-            'Status': [
-                "Ativo", "Afastado", "Ativo",
-                "Desligado", "Ativo", "Ativo"
-            ],
-            'Data de Ingresso': [
-                "07-07-2020", "23-10-2020", "30-03-2019",
-                "04-02-2021", "11-11-2022", "29-06-2023"
-            ],
-            'Especialidade': [
-                "Agente de Saúde", "Enfermeiro", "Secretário de Saúde",
-                "Enfemeiro", "Médico", "Médico"
-            ],
-            'Último Login': [
-                "06-07-2025 12:05", "07-06-2025 16:32", "04-07-2025 07:21",
-                "02-01-2025 11:53", "20-06-2025 19:43", "07-07-2025 15:12"
-            ]
-        })
-
 if 'page' not in st.session_state:
 
     st.session_state.page = '📊 Quadro Geral'
@@ -73,7 +42,7 @@ if 'page' not in st.session_state:
 with st.sidebar:
 
     st.markdown("### 🧭 Navegação")
-    escolha = st.radio("Escolha a página:", ["📊 Quadro Geral", "🗺️ Mapa Interativo", "🤝 Equipes"], label_visibility="collapsed")
+    escolha = st.radio("Escolha a página:", ["📊 Quadro Geral", "🤝 Equipes"], label_visibility="collapsed")
     st.session_state.page = escolha
 
 
@@ -207,75 +176,43 @@ if st.session_state.page == "📊 Quadro Geral":
 
             st.write(texto)
 
-elif st.session_state.page == "🗺️ Mapa Interativo":
-
-    st.markdown("<h1 style='text-align: center;'>Mapa Interativo</h1>", unsafe_allow_html=True)
-    st.title("🌡️ Mapa de Calor - Notificações na RMR")
-
-    dados = pd.DataFrame({
-        'Município': [
-            'Recife', 'Olinda', 'Jaboatão dos Guararapes',
-            'Paulista', 'Camaragibe', 'São Lourenço da Mata',
-            'Igarassu', 'Abreu e Lima', 'Cabo de Santo Agostinho',
-            'Moreno', 'Itapissuma', 'Araçoiaba', 'Itamaracá'
-        ],
-        'Latitude': [
-            -8.0476, -7.9986, -8.1127,
-            -7.9408, -8.0237, -7.9907,
-            -7.8286, -7.9111, -8.2822,
-            -8.1082, -7.7758, -7.7883, -7.7425
-        ],
-        'Longitude': [
-            -34.8770, -34.8450, -34.9286,
-            -34.8731, -34.9787, -35.0133,
-            -34.9012, -34.8983, -35.0255,
-            -35.0831, -34.9564, -35.0906, -34.8298
-        ],
-        'Casos': [
-            320, 150, 290,
-            80, 70, 60,
-            50, 45, 110,
-            40, 25, 15, 30
-        ]
-    })
-
-    heat_data = []
-
-    for _, row in dados.iterrows():
-
-        heat_data.extend([[row['Latitude'], row['Longitude']]] * row['Casos'])
-
- 
-    m = folium.Map(location=[-8.05, -34.9], zoom_start=10)
-
-
-    HeatMap(heat_data, radius=20, blur=15, min_opacity=0.3).add_to(m)
-
-
-    for _, row in dados.iterrows():
-
-        folium.Marker(
-            location=[row['Latitude'], row['Longitude']],
-            popup=f"{row['Município']}<br>Casos: {row['Casos']}",
-            icon=folium.Icon(color="blue", icon="info-sign")
-        ).add_to(m)
-
-
-    folium_static(m)
 
 elif st.session_state.page == "🤝 Equipes":
     st.title("Equipes")
-    st.dataframe(st.session_state.nomes)
-    equipes_btn = st.button("Gerenciar equipes")
-    if equipes_btn:
+    nomes = pd.DataFrame({
+        'Membros': [
+            'Juan Pabollo', 'Vitor Barros', 'Wellington Viana',
+            'Ruan Rodrigues', 'Samara Accioly', 'Gabriel Farias'
+        ],
+        'Usuário': [
+            "juansilva", "vBarros", "wViana03",
+            "rodrigues01", "samaraaccioly", "gabrielF"
+        ],
+        'Status': [
+            "Ativo", "Afastado", "Ativo",
+            "Desligado", "Ativo", "Ativo"
+        ],
+        'Data de Ingresso': [
+            "07-07-2020", "23-10-2020", "30-03-2019",
+            "04-02-2021", "11-11-2022", "29-06-2023"
+        ],
+        'Especialidade': [
+            "Agente de Saúde", "Enfermeiro", "Secretário de Saúde",
+            "Enfemeiro", "Médico", "Médico"
+        ],
+        'Último Login': [
+            "06-07-2025 12:05", "07-06-2025 16:32", "04-07-2025 07:21",
+            "02-01-2025 11:53", "20-06-2025 19:43", "07-07-2025 15:12"
+        ]
+    })
 
-        st.switch_page("pages/equipes.py")
+    st.dataframe(nomes)
 
 homepage_btn = st.button("Homepage")
+
 if homepage_btn:
       
       st.switch_page("pages/_homepage.py")
-
 
         
 
