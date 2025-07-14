@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 st.set_page_config(page_title="Nexus", layout="centered", initial_sidebar_state="collapsed")
 
 st.image("pages/image.png", use_container_width=True)
@@ -23,6 +24,12 @@ salvar_btn = st.button("Salvar")
 
 homepage_btn = st.button("Homepage")
 
+logout_btn = st.button("Fazer Logoff")
+
+if logout_btn:
+      st.session_state.auth_token = False
+      st.switch_page("pages/_login.py")
+      st.rerun()
 if homepage_btn:
       
       st.switch_page("pages/_homepage.py")

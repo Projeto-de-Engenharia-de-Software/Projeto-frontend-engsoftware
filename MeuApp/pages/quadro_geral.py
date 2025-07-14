@@ -8,22 +8,17 @@ from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 import altair as alt
 
+st.set_page_config(
+    page_title="Nexus - Quadro Geral",
+    page_icon=":chart_with_upwards_trend:",
+    layout="wide"
+)
 
 @st.cache_data
 def carregar_dados():
 
     caminho = "pages/sinannet_cnv_violepe231354143_208_128_99.csv"
     return pd.read_csv(caminho, sep=";", encoding="iso-8859-1", skiprows=3)
-
-
-
-
-st.set_page_config(
-    page_title="Nexus - Quadro Geral",
-    page_icon=":chart_with_upwards_trend:",
-    layout="wide",
-)
-
 
 st.markdown("""
     <style>
@@ -36,34 +31,7 @@ st.markdown("""
 
 st.image("pages/image.png", use_container_width=True) 
 
-if 'nomes' not in st.session_state:
 
-    st.session_state.nomes = pd.DataFrame({
-            'Membros': [
-                'Juan Pabollo', 'Vitor Barros', 'Wellington Viana',
-                'Ruan Rodrigues', 'Samara Accioly', 'Gabriel Farias'
-            ],
-            'Usuário': [
-                "juansilva", "vBarros", "wViana03",
-                "rodrigues01", "samaraaccioly", "gabrielF"
-            ],
-            'Status': [
-                "Ativo", "Afastado", "Ativo",
-                "Desligado", "Ativo", "Ativo"
-            ],
-            'Data de Ingresso': [
-                "07-07-2020", "23-10-2020", "30-03-2019",
-                "04-02-2021", "11-11-2022", "29-06-2023"
-            ],
-            'Especialidade': [
-                "Agente de Saúde", "Enfermeiro", "Secretário de Saúde",
-                "Enfemeiro", "Médico", "Médico"
-            ],
-            'Último Login': [
-                "06-07-2025 12:05", "07-06-2025 16:32", "04-07-2025 07:21",
-                "02-01-2025 11:53", "20-06-2025 19:43", "07-07-2025 15:12"
-            ]
-        })
 
 if 'page' not in st.session_state:
 
@@ -264,12 +232,8 @@ elif st.session_state.page == "🗺️ Mapa Interativo":
     folium_static(m)
 
 elif st.session_state.page == "🤝 Equipes":
-    st.title("Equipes")
-    st.dataframe(st.session_state.nomes)
-    equipes_btn = st.button("Gerenciar equipes")
-    if equipes_btn:
-
-        st.switch_page("pages/equipes.py")
+    
+    st.switch_page("pages/equipes.py")
 
 homepage_btn = st.button("Homepage")
 if homepage_btn:

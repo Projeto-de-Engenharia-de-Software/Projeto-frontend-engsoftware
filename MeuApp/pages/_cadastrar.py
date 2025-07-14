@@ -3,7 +3,7 @@ import requests
 import json
 
 # Configurações da API
-API_BASE_URL = "http://127.0.0.1:8000/api/" 
+API_BASE_URL = "http://54.209.29.198:8000/api/" 
 
 def make_authenticated_request(method, url, headers=None, params=None, json_data=None):
     if 'auth_token' not in st.session_state:

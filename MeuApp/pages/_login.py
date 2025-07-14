@@ -57,7 +57,6 @@ def fazer_login(username, password):
         if token:
 
             st.session_state.auth_token = token 
-            st.success("Login realizado com sucesso!")
             st.switch_page("pages/quadro_geral.py")  
 
         else:
@@ -79,7 +78,7 @@ def fazer_login(username, password):
 
         return False
 
-API_BASE_URL = "http://127.0.0.1:8000/api/" 
+API_BASE_URL = "http://54.209.29.198:8000/api/" 
 
 st.set_page_config(page_title="Nexus - Login", layout="centered", initial_sidebar_state="collapsed")
 
@@ -140,7 +139,7 @@ if col1.button("Entrar", key="btn_entrar_login"):
     if sucesso:
 
         st.success("Login realizado com sucesso!")
-        st.switch_page("pages/quadro_geral.py")
+        
 
     else:
 
