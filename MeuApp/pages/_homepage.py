@@ -44,7 +44,8 @@ if selecionar_pag and pagina=="📊 Quadro Geral":
     st.switch_page("pages/quadro_geral.py")
 
 if selecionar_pag and pagina=="🗺️ Mapa Interativo":
-    st.switch_page("pages/mapa_interativo.py")   
+    st.session_state.page = "🗺️ Mapa Interativo"
+    st.switch_page("pages/quadro_geral.py")   
 
 if selecionar_pag and pagina=="⚙️ Configurações":
     st.switch_page("pages/configuracoes.py")  

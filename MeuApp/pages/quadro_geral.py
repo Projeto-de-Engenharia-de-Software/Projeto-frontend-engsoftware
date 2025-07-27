@@ -7,6 +7,8 @@ from datetime import timedelta
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 import altair as alt
+from pages.configuracoes import config
+
 
 st.set_page_config(
     page_title="Nexus - Quadro Geral",
@@ -41,7 +43,7 @@ if 'page' not in st.session_state:
 with st.sidebar:
 
     st.markdown("### 🧭 Navegação")
-    escolha = st.radio("Escolha a página:", ["📊 Quadro Geral", "🗺️ Mapa Interativo", "🤝 Equipes"], label_visibility="collapsed")
+    escolha = st.radio("Escolha a página:", ["📊 Quadro Geral", "🗺️ Mapa Interativo", "🤝 Equipes", "⚙️ Configurações"], label_visibility="collapsed")
     st.session_state.page = escolha
 
 
@@ -235,10 +237,11 @@ elif st.session_state.page == "🤝 Equipes":
     
     st.switch_page("pages/equipes.py")
 
-homepage_btn = st.button("Homepage")
-if homepage_btn:
-      
-      st.switch_page("pages/_homepage.py")
+elif st.session_state.page == "⚙️ Configurações":
+
+    config()
+
+
 
 
         
