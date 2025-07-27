@@ -10,12 +10,25 @@ import altair as alt
 from pages.configuracoes import config
 from pages.equipes import equipes, get_equipes
 from pages.util import API_BASE_URL, make_authenticated_request
+import extra_streamlit_components as stx
+from pages._login import cookie
 
 st.set_page_config(
     page_title="Nexus - Quadro Geral",
     page_icon=":chart_with_upwards_trend:",
     layout="wide"
 )
+
+
+
+# Recupera token salvo no cookie
+token_cookie = cookie.get("auth_token")
+if token_cookie and 'auth_token' not in st.session_state:
+    st.session_state.auth_token = token_cookie
+
+# Se não houver token válido, redireciona para login
+if 'auth_token' not in st.session_state:
+    st.switch_page("pages/_login.py")
 
 @st.cache_data
 def carregar_dados():
