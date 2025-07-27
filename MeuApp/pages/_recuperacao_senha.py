@@ -40,7 +40,7 @@ st.markdown("""
 
 st.image("pages/image.png", use_container_width=True) 
 
-st.markdown('<div class="title">Recuperar Senha.</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">Recuperar Senha</div>', unsafe_allow_html=True)
 col1, col2, col3= st.columns(3)
 
 
