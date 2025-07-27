@@ -41,14 +41,13 @@ def registrar_usuario(data):
     try:
         response = requests.post(f"{API_BASE_URL}register/", json=data) 
         response.raise_for_status()
-
         return True
 
     except requests.exceptions.RequestException as e:
 
         error_message = "Erro no cadastro. Por favor, tente novamente."
 
-        if response is not None:
+        if response in locals() and response is not None:
 
             try:
                 error_details = response.json()

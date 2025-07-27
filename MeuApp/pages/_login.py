@@ -100,7 +100,7 @@ if col1.button("Entrar", key="btn_entrar_login"):
 # Esqueci minha senha
 with col2:
     if st.button("Esqueci minha senha", key="btn_esqueci_login"):
-        st.switch_page("pages/_recuperarcao_senha.py")
+        st.switch_page("pages/_recuperacao_senha.py")
 
 # Cadastro
 with col3:

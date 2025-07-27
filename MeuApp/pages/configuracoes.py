@@ -1,31 +1,60 @@
 import streamlit as st
+from pages.util import make_authenticated_request, API_BASE_URL
 
 def config():
-      #st.set_page_config(page_title="Nexus", layout="centered", initial_sidebar_state="collapsed")
+    st.title("Configurações")
 
-      #st.image("pages/image.png", use_container_width=True)
+    st.subheader("Alterar Senha")
 
-      left, center, right = st.columns([3, 5, 2])
+    old_password = st.text_input("Senha Atual", type="password")
+    new_password = st.text_input("Nova Senha", type="password")
+    confirm_new_password = st.text_input("Confirmar Nova Senha", type="password")
 
+    st.subheader("Alterar Nome de Usuário")
+    novo_user = st.text_input("Novo Usuário")  # Ainda não implementado
 
-      with center:
-            
-            st.title("Configurações")
+    salvar_btn = st.button("Salvar")
+    logout_btn = st.button("Fazer Logoff")
 
-      with st.container():
+    if logout_btn:
+        st.session_state.auth_token = False
+        st.switch_page("pages/_login.py")
+        st.rerun()
 
-            nova_senha = st.text_input("Nova Senha")
+    if salvar_btn:
+        if not all([old_password, new_password, confirm_new_password]):
+            st.warning("Preencha todos os campos de senha.")
+            return
 
-            confirmar_senha = st.text_input("Confirmar Nova Senha")
+        if new_password != confirm_new_password:
+            st.warning("As senhas novas não coincidem.")
+            return
 
-            novo_user = st.text_input("Novo Usuário")
+        payload = {
+            "old_password": old_password,
+            "new_password": new_password,
+            "confirm_new_password": confirm_new_password
+        }
 
-      salvar_btn = st.button("Salvar")
+        response = make_authenticated_request(
+            method="put",
+            url=f"{API_BASE_URL}profile/change-password/",
+            json_data=payload
+        )
 
-      logout_btn = st.button("Fazer Logoff")
+        if response is None:
+            st.error("Falha na requisição. Sem resposta da API.")
+            return
 
-      if logout_btn:
-            st.session_state.auth_token = False
-            st.switch_page("pages/_login.py")
-            st.rerun()
-
+        if response.status_code == 200:
+            st.success("Senha alterada com sucesso!")
+        else:
+            # Tenta mostrar o erro detalhado da API
+            try:
+                error_json = response.json()
+                error_message = "Erro ao alterar senha:"
+                for field, errors in error_json.items():
+                    error_message += f"\n- {field}: {', '.join(errors)}"
+                st.error(error_message)
+            except Exception:
+                st.error(f"Erro inesperado. Status code: {response.status_code}")
