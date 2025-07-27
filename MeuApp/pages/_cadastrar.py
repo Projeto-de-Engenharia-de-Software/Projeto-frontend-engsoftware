@@ -142,7 +142,7 @@ with st.container():
     confirmar_senha = col1.text_input("Confirmar Senha", type= "password", placeholder="Confirme sua Senha")
     nome_completo = col2.text_input("Nome Completo", placeholder= "Digite seu Nome Completo")
     perfil = col2.selectbox(label="Perfil", options= ["Gestor de Saúde","Agente de Saúde"])
-    unidade_de_saude = col2.text_input("Unidade de Saúde", placeholder= "Selecione sua Unidade de Saúde")
+    unidade_saude = col2.text_input("Unidade de Saúde", placeholder= "Selecione sua Unidade de Saúde")
     especialidade = col2.text_input("Especialidade", placeholder="Digite a sua Especialidade")
 
     if perfil == "Gestor de Saúde":
@@ -159,7 +159,7 @@ with st.container():
         "password_confirmacao": confirmar_senha,
         "nome_completo": nome_completo,
         "especialidade": especialidade,
-        "unidade_saude": unidade_de_saude,
+        "unidade_saude": unidade_saude,
         "email": email,
         "perfil": perfil
         }
