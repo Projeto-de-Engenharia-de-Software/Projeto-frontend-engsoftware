@@ -159,7 +159,7 @@ with st.container():
         "password_confirmacao": confirmar_senha,
         "nome_completo": nome_completo,
         "especialidade": especialidade,
-        "unidade_de_saude": unidade_de_saude,
+        "unidade_saude": unidade_de_saude,
         "email": email,
         "perfil": perfil
         }
