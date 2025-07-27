@@ -99,4 +99,5 @@ with cl1:
     
 with cl2:
     if st.button("Voltar"):
-        st.switch_page("pages/equipes.py")
+        st.session_state.page = "🤝 Equipes"
+        st.switch_page("pages/quadro_geral.py")

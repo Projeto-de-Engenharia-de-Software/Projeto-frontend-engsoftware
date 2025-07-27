@@ -8,7 +8,8 @@ from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 import altair as alt
 from pages.configuracoes import config
-
+from pages.equipes import equipes, get_equipes
+from pages.util import API_BASE_URL, make_authenticated_request
 
 st.set_page_config(
     page_title="Nexus - Quadro Geral",
@@ -234,8 +235,9 @@ elif st.session_state.page == "🗺️ Mapa Interativo":
     folium_static(m)
 
 elif st.session_state.page == "🤝 Equipes":
-    
-    st.switch_page("pages/equipes.py")
+    eqp = get_equipes()
+    equipes(eqp)
+    #st.switch_page("pages/equipes.py")
 
 elif st.session_state.page == "⚙️ Configurações":
 
