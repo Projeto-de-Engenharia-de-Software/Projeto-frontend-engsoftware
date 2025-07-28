@@ -137,7 +137,7 @@ def modal_card(card_id, title, preview_html, initial_modal_content_html):
         </div>
     </div>
     """
-    html(html_content, height=260)
+    html(html_content, height=500)
 
 
 # ----------------------

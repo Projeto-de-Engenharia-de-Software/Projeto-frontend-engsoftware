@@ -13,6 +13,7 @@ from pages.util import API_BASE_URL, make_authenticated_request
 import extra_streamlit_components as stx
 from pages._login import cookie
 from pages.boletins import boletin
+import plotly.express as px
 import requests
 
 st.set_page_config(
@@ -224,6 +225,116 @@ def grafico(dados, ano, max_month_filter):
     - **{ano}**: {tipo_variacao} de **{variacao_formatada:.2f}%** nos casos entre o primeiro e o último mês.
     • Total de casos no ano: **{total_ano}** """)
 
+
+def grafico_cidades(dados, ano):
+    st.markdown("---")
+    
+    dados_grafico_ano = pd.DataFrame()
+    # --- Lógica para o Gráfico de Linhas por Mês e MUNICÍPIO ---
+    if not dados.empty and 'DT_OCOR' in dados.columns and 'MUNICIPIO' in dados.columns and 'NU_ANO' in dados.columns:
+        # 1. Filtrar os dados para o ano selecionado no selectbox do gráfico
+        dados_grafico_ano = dados[dados["NU_ANO"] == ano].copy()
+
+        # 2. Extrair o mês da coluna de data (DT_OCOR)
+        dados_grafico_ano['MES'] = dados_grafico_ano['DT_OCOR'].dt.month
+        
+        # Mapear número do mês para nome do mês (para o eixo X)
+        mes_nomes = {
+            1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+            7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
+        }
+        dados_grafico_ano['MES_NOME'] = dados_grafico_ano['MES'].map(mes_nomes)
+
+        # 3. Agrupar por Mês e MUNICÍPIO e contar os casos
+        # Remove linhas onde MUNICIPIO é None ou vazio antes de agrupar, se aplicável
+        dados_grafico_ano_limpo = dados_grafico_ano.dropna(subset=['MUNICIPIO'])
+        
+        # Contar ocorrências para cada MUNICIPIO por MÊS
+        contagem_por_mes_municipio = dados_grafico_ano_limpo.groupby(['MES', 'MES_NOME', 'MUNICIPIO']).size().reset_index(name='Numero de Casos')
+        
+        # 4. Preencher meses faltantes para linhas contínuas
+        # Pega todos os municípios únicos e todos os meses possíveis
+        todos_municipios_unicos = contagem_por_mes_municipio['MUNICIPIO'].unique()
+        todos_meses_numeros = range(1, 13)
+        
+        # Cria um DataFrame de todos os meses/municípios possíveis
+        full_index = pd.MultiIndex.from_product([todos_meses_numeros, todos_municipios_unicos], names=['MES', 'MUNICIPIO'])
+        full_df = pd.DataFrame(index=full_index).reset_index()
+        
+        # Faz um merge com a contagem real e preenche NaNs com 0
+        contagem_por_mes_municipio = pd.merge(
+            full_df, contagem_por_mes_municipio, 
+            on=['MES', 'MUNICIPIO'], how='left'
+        ).fillna(0)
+        contagem_por_mes_municipio['Numero de Casos'] = contagem_por_mes_municipio['Numero de Casos'].astype(int)
+        
+        # Adiciona o nome do mês novamente após o merge
+        contagem_por_mes_municipio['MES_NOME'] = contagem_por_mes_municipio['MES'].map(mes_nomes)
+
+         # --- NOVO: Gráfico de Barras por Município ---
+    st.subheader(f"Total de Casos por Município (Ano {ano})")
+
+    # Reutilize 'dados_grafico_ano' que já está filtrado pelo ano selecionado
+    # Agrupe por MUNICPIO e conte o número de ocorrências
+    if not dados_grafico_ano.empty and 'MUNICIPIO' in dados_grafico_ano.columns:
+        contagem_por_municipio = dados_grafico_ano['MUNICIPIO'].value_counts().reset_index()
+        contagem_por_municipio.columns = ['Município', 'Total de Casos']
+        
+        # Opcional: Ordenar barras para melhor visualização (ex: do maior para o menor)
+        contagem_por_municipio = contagem_por_municipio.sort_values('Total de Casos', ascending=False)
+
+        bar_chart = alt.Chart(contagem_por_municipio).mark_bar().encode(
+            x=alt.X('Total de Casos:Q', title='Número de Casos'),
+            y=alt.Y('Município:N', sort='-x', title='Município'), # Ordena Y pelo valor do X (descendente)
+            tooltip=['Município', 'Total de Casos']
+        ).properties(
+            title=f'Total de Casos por Município em {ano}'
+        ).interactive() # Permite zoom
+
+        st.altair_chart(bar_chart, use_container_width=True)
+
+    else:
+        st.info(f"Dados insuficientes ou colunas 'DT_OCOR'/'MUNICIPIO' ausentes para gerar o gráfico para o ano {ano}.")
+    
+    st.subheader("📍 Variação de Casos entre as datas selecionadas:")
+
+    
+    # Garante que DT_OCOR está em datetime
+    dados['DT_NOTIFIC'] = pd.to_datetime(dados['DT_NOTIFIC'], errors='coerce')
+
+    # Cria colunas auxiliares de ano e mês
+    dados['ANO'] = dados['DT_NOTIFIC'].dt.year
+    dados['MES'] = dados['DT_NOTIFIC'].dt.month
+
+    # Agrupa os dados por ANO e MES
+    dados_ano = dados[dados['ANO'] == ano]
+
+    # Conta casos por mês
+    casos_por_mes = dados_ano.groupby('MES').size().sort_index()
+
+    if not casos_por_mes.empty:
+        primeiro_mes = casos_por_mes.iloc[0]
+        ultimo_mes = casos_por_mes.iloc[-1]
+
+        # Calcula a variação percentual entre o primeiro e o último mês
+        if primeiro_mes > 0:
+            variacao_percentual = ((ultimo_mes - primeiro_mes) / primeiro_mes) * 100
+        else:
+            variacao_percentual = 0.0
+
+        total_ano = casos_por_mes.sum()
+        variancia_mensal = casos_por_mes.var()
+
+        # Formata texto no estilo da imagem
+        tipo_variacao = "aumento" if variacao_percentual > 0 else "redução"
+        variacao_formatada = abs(variacao_percentual)
+
+        st.markdown(f"""
+        - **{ano}**: {tipo_variacao} de **{variacao_formatada:.2f}%** nos casos entre o primeiro e o último mês.
+        • Total de casos no ano: **{total_ano}**  
+        
+        """)
+
 st.markdown("""
     <style>
         /* Oculta a navegação padrão de páginas do Streamlit */
@@ -283,20 +394,72 @@ if st.session_state.page == "📊 Quadro Geral":
         (dados_ano["DT_NOTIFIC"].dt.date <= slider[1])
     ]
 
-    raca = st.sidebar.selectbox(
+    raca = st.sidebar.multiselect(
         "Selecione a cor ou raça",
-        ["Nenhum", "Branca", "Preta", "Parda", "Amarela", "Indígena", "Ignorado"])
+        ["Branca", "Preta", "Parda", "Amarela", "Indígena", "Ignorado"])
     
-    dados_raca = dados_filtrados[dados_filtrados["CS_RACA"] == raca ]
+    dados_raca = dados_filtrados[dados_filtrados["CS_RACA"].isin(raca) ]
 
-    if raca == "Nenhum":
+    select_tipo = st.sidebar.selectbox("Selecione o tipo de visualização", ["Mesoregiões", "Cidades"]) 
 
-        st.dataframe(dados_filtrados) 
-        grafico(dados_filtrados, ano, max_month_for_chart)
-    
-    else:
-        st.dataframe(dados_raca)
-        grafico(dados_raca, ano, max_month_for_chart)
+    if select_tipo == "Mesoregiões":
+        if not raca:
+        
+            grafico(dados_filtrados, ano, max_month_for_chart)
+            st.dataframe(dados_filtrados) 
+
+        else:
+            
+            grafico(dados_raca, ano, max_month_for_chart)
+            st.dataframe(dados_raca)
+    if select_tipo == "Cidades":
+
+        dados_cidade = dados_filtrados["MUNICIPIO"].unique().tolist() 
+        select_cidade = st.sidebar.multiselect("Selecione as cidades para observar", dados_cidade)
+
+        if not raca:
+   
+            if not select_cidade:
+                grafico_cidades(dados_filtrados, ano)
+                st.dataframe(dados_filtrados)
+
+            else:
+                dados_filtrados = dados_filtrados[dados_filtrados["MUNICIPIO"].isin(select_cidade)]
+
+                grafico_cidades(dados_filtrados, ano)
+                st.dataframe(dados_filtrados)               
+
+        else:
+            
+            if not select_cidade:
+                grafico_cidades(dados_raca, ano)
+                st.dataframe(dados_raca)
+                contagem = dados_raca['CS_RACA'].value_counts().reset_index()
+                contagem.columns = ['CS_RACA', 'Casos']
+
+                fig = px.pie(
+                contagem,
+                names="CS_RACA",
+                values="Casos",
+                hole=0
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                dados_raca = dados_raca[dados_raca["MUNICIPIO"].isin(select_cidade)]
+
+                grafico_cidades(dados_raca, ano)
+                st.dataframe(dados_raca)
+                
+                contagem = dados_raca['CS_RACA'].value_counts().reset_index()
+                contagem.columns = ['CS_RACA', 'Casos']
+
+                fig = px.pie(
+                contagem,
+                names="CS_RACA",
+                values="Casos",
+                hole=0
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
     
 elif st.session_state.page == "🗺️ Mapa Interativo":
@@ -355,8 +518,7 @@ elif st.session_state.page == "🗺️ Mapa Interativo":
         contagem_de_casos = dados_raca["MUNICIPIO"].value_counts()
         dados_geo["Casos"] = dados_geo["cidade"].map(contagem_de_casos).fillna(0).astype(int)
 
-    contagem_de_casos = dados_filtrados["MUNICIPIO"].value_counts()
-    dados_geo["Casos"] = dados_geo["cidade"].map(contagem_de_casos).fillna(0).astype(int)
+
         
 
     heat_data = []
