@@ -13,6 +13,7 @@ from pages.util import API_BASE_URL, make_authenticated_request
 import extra_streamlit_components as stx
 from pages._login import cookie
 from pages.boletins import boletin
+import requests
 
 st.set_page_config(
     page_title="Nexus - Quadro Geral",
@@ -77,18 +78,43 @@ def carregar_dados_pernambuco():
         st.error(f"Não foi possível carregar a lista de municípios. Erro: {e}")
         return pd.DataFrame()
     
-def grafico(dados, ano):
-    st.markdown("---")
-    
+@st.cache_data
+def save_mesorregioes():
+    url = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios"
+    resposta = requests.get(url)
+    municipios = resposta.json()
 
-    # --- Lógica para o Gráfico de Linhas por Mês e MUNICÍPIO ---
+    # Filtra só os de Pernambuco (UF 26) e cria o mapa cidade -> mesorregião
+    mapa_cidade_mesorregiao = {}
+
+    for m in municipios:
+        # Os dados estão dentro de Mesorregião, que antes dela, possui a micro, então dela a gente pega a macro
+        microrregiao = m.get('microrregiao')
+        mesorregiao = microrregiao.get('mesorregiao') if microrregiao else None
+        uf = mesorregiao.get('UF') if mesorregiao else None
+
+        if uf and uf.get('id') == 26:  # Pernambuco
+            nome_cidade = m.get('nome', 'Desconhecido')
+            nome_mesorregiao = mesorregiao.get('nome', 'Sem Mesorregião')
+            mapa_cidade_mesorregiao[nome_cidade] = nome_mesorregiao
+
+    return mapa_cidade_mesorregiao
+    
+@st.cache_data
+def grafico(dados, ano, max_month_filter):
+    # Filtragem por Mesorregião, para plotar nos dados
+    mapa_mesorregioes = save_mesorregioes()
+    dados['MESORREGIAO'] = dados['MUNICIPIO'].map(mapa_mesorregioes).fillna("Desconhecida")
+
+    st.markdown("---")
+
+    # --- Lógica para o Gráfico de Linhas por Mês e MESORREGIAO ---
     if not dados.empty and 'DT_OCOR' in dados.columns and 'MUNICIPIO' in dados.columns and 'NU_ANO' in dados.columns:
         # 1. Filtrar os dados para o ano selecionado no selectbox do gráfico
         dados_grafico_ano = dados[dados["NU_ANO"] == ano].copy()
 
         # 2. Extrair o mês da coluna de data (DT_OCOR)
         dados_grafico_ano['MES'] = dados_grafico_ano['DT_OCOR'].dt.month
-        
         # Mapear número do mês para nome do mês (para o eixo X)
         mes_nomes = {
             1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
@@ -96,60 +122,75 @@ def grafico(dados, ano):
         }
         dados_grafico_ano['MES_NOME'] = dados_grafico_ano['MES'].map(mes_nomes)
 
-        # 3. Agrupar por Mês e MUNICÍPIO e contar os casos
-        # Remove linhas onde MUNICIPIO é None ou vazio antes de agrupar, se aplicável
-        dados_grafico_ano_limpo = dados_grafico_ano.dropna(subset=['MUNICIPIO'])
+        # 3. Agrupar por Mês e MESORREGIAO e contar os casos, Remove linhas onde MESORREGIAO é None ou vazio antes de agrupar, se aplicável
+        dados_grafico_ano_limpo = dados_grafico_ano.dropna(subset=['MESORREGIAO'])
+        # Contar ocorrências para cada MESORREGIAO por MÊS
+        contagem_por_mes_mesorregiao = dados_grafico_ano_limpo.groupby(['MES', 'MES_NOME', 'MESORREGIAO']).size().reset_index(name='Numero de Casos')
         
-        # Contar ocorrências para cada MUNICIPIO por MÊS
-        contagem_por_mes_municipio = dados_grafico_ano_limpo.groupby(['MES', 'MES_NOME', 'MUNICIPIO']).size().reset_index(name='Numero de Casos')
-        
-        # 4. Preencher meses faltantes para linhas contínuas
-        # Pega todos os municípios únicos e todos os meses possíveis
-        todos_municipios_unicos = contagem_por_mes_municipio['MUNICIPIO'].unique()
-        todos_meses_numeros = range(1, 13)
-        
+        # 4. Preencher meses faltantes para linhas contínuas, Pega todos os municípios únicos e todos os meses possíveis
+        todos_mesorregiao_unicos = contagem_por_mes_mesorregiao['MESORREGIAO'].unique()
+        todos_meses_numeros = range(1, 13) 
         # Cria um DataFrame de todos os meses/municípios possíveis
-        full_index = pd.MultiIndex.from_product([todos_meses_numeros, todos_municipios_unicos], names=['MES', 'MUNICIPIO'])
+        full_index = pd.MultiIndex.from_product([todos_meses_numeros, todos_mesorregiao_unicos], names=['MES', 'MESORREGIAO'])
         full_df = pd.DataFrame(index=full_index).reset_index()
         
         # Faz um merge com a contagem real e preenche NaNs com 0
-        contagem_por_mes_municipio = pd.merge(
-            full_df, contagem_por_mes_municipio, 
-            on=['MES', 'MUNICIPIO'], how='left'
+        contagem_por_mes_mesorregiao = pd.merge(
+            full_df, contagem_por_mes_mesorregiao, 
+            on=['MES', 'MESORREGIAO'], how='left'
         ).fillna(0)
-        contagem_por_mes_municipio['Numero de Casos'] = contagem_por_mes_municipio['Numero de Casos'].astype(int)
+        contagem_por_mes_mesorregiao['Numero de Casos'] = contagem_por_mes_mesorregiao['Numero de Casos'].astype(int)
+        dados_linha_filtrado = contagem_por_mes_mesorregiao.groupby('MES')['Numero de Casos'].sum()
+        meses_usados = dados_linha_filtrado[dados_linha_filtrado > 0].index.tolist()
+
+        contagem_por_mes_mesorregiao = contagem_por_mes_mesorregiao[
+        contagem_por_mes_mesorregiao['MES'].isin(meses_usados)
+        ]
         
         # Adiciona o nome do mês novamente após o merge
-        contagem_por_mes_municipio['MES_NOME'] = contagem_por_mes_municipio['MES'].map(mes_nomes)
+        contagem_por_mes_mesorregiao['MES_NOME'] = contagem_por_mes_mesorregiao['MES'].map(mes_nomes)
+        # Filtrar a data relacionada à mesorregião
+        contagem_por_mes_mesorregiao = contagem_por_mes_mesorregiao[contagem_por_mes_mesorregiao['MES'] <= max_month_filter]
 
-         # --- NOVO: Gráfico de Barras por Município ---
-    st.subheader(f"Total de Casos por Município (Ano {ano})")
 
-    # Reutilize 'dados_grafico_ano' que já está filtrado pelo ano selecionado
-    # Agrupe por MUNICPIO e conte o número de ocorrências
-    if not dados_grafico_ano.empty and 'MUNICIPIO' in dados_grafico_ano.columns:
-        contagem_por_municipio = dados_grafico_ano['MUNICIPIO'].value_counts().reset_index()
-        contagem_por_municipio.columns = ['Município', 'Total de Casos']
-        
-        # Opcional: Ordenar barras para melhor visualização (ex: do maior para o menor)
-        contagem_por_municipio = contagem_por_municipio.sort_values('Total de Casos', ascending=False)
+         # --- Gráfico de Barras por MESORREGIAO ---
+    st.subheader(f"Total de Casos por Mesorregião ({ano})")
 
-        bar_chart = alt.Chart(contagem_por_municipio).mark_bar().encode(
+    # Agrupar por MUNICPIO e conte o número de ocorrências
+    if not dados_grafico_ano.empty and 'MESORREGIAO' in dados_grafico_ano.columns:
+        contagem_por_mesorregiao = dados_grafico_ano['MESORREGIAO'].value_counts().reset_index()
+        contagem_por_mesorregiao.columns = ['Mesorregião', 'Total de Casos']
+        contagem_por_mesorregiao = contagem_por_mesorregiao.sort_values('Total de Casos', ascending=False)
+
+        bar_chart = alt.Chart(contagem_por_mesorregiao).mark_bar().encode(
             x=alt.X('Total de Casos:Q', title='Número de Casos'),
-            y=alt.Y('Município:N', sort='-x', title='Município'), # Ordena Y pelo valor do X (descendente)
-            tooltip=['Município', 'Total de Casos']
-        ).properties(
-            title=f'Total de Casos por Município em {ano}'
-        ).interactive() # Permite zoom
+            y=alt.Y('Mesorregião:N', sort='-x', title='Mesorregião'), # Ordena Y pelo valor do X (descendente)
+            tooltip=['Mesorregião', 'Total de Casos']
+        ).interactive()
 
         st.altair_chart(bar_chart, use_container_width=True)
+    
+        st.subheader(f"Evolução Mensal de Casos por Mesorregião ({ano})")
+
+        linha = alt.Chart(contagem_por_mes_mesorregiao).mark_line(point=True).encode(
+            x=alt.X('MES_NOME:N', sort=list(mes_nomes.values()), title='Mês'),
+            y=alt.Y('Numero de Casos:Q', title='Número de Casos'),
+            color=alt.Color('MESORREGIAO:N', title='Mesorregião'),
+            tooltip=['MESORREGIAO', 'MES_NOME', 'Numero de Casos']
+        ).properties(
+            width='container',
+            height=400,
+            title=f"Casos por Mês e Mesorregião - {ano}"
+        ).interactive()
+
+        st.altair_chart(linha, use_container_width=True)
 
     else:
-        st.info(f"Dados insuficientes ou colunas 'DT_OCOR'/'MUNICIPIO' ausentes para gerar o gráfico para o ano {ano}.")
+        st.info(f"Dados insuficientes ou colunas 'DT_OCOR'/'MESORREGIAO' ausentes para gerar o gráfico para o ano {ano}.")
     
     st.subheader("📍 Variação de Casos entre as datas selecionadas:")
 
-    # Garante que DT_OCOR está em datetime
+    # Garante que DT_NOTIFIC está em datetime
     dados['DT_NOTIFIC'] = pd.to_datetime(dados['DT_NOTIFIC'], errors='coerce')
 
     # Cria colunas auxiliares de ano e mês
@@ -181,9 +222,7 @@ def grafico(dados, ano):
 
     st.markdown(f"""
     - **{ano}**: {tipo_variacao} de **{variacao_formatada:.2f}%** nos casos entre o primeiro e o último mês.
-    • Total de casos no ano: **{total_ano}**  
-    
-    """)
+    • Total de casos no ano: **{total_ano}** """)
 
 st.markdown("""
     <style>
@@ -237,6 +276,7 @@ if st.session_state.page == "📊 Quadro Geral":
         step=timedelta(days=1)
     )
 
+    max_month_for_chart = slider[1].month
 
     dados_filtrados = dados_ano[
         (dados_ano["DT_NOTIFIC"].dt.date >= slider[0]) & 
@@ -252,11 +292,11 @@ if st.session_state.page == "📊 Quadro Geral":
     if raca == "Nenhum":
 
         st.dataframe(dados_filtrados) 
-        grafico(dados_filtrados, ano)
+        grafico(dados_filtrados, ano, max_month_for_chart)
     
     else:
         st.dataframe(dados_raca)
-        grafico(dados_raca, ano)
+        grafico(dados_raca, ano, max_month_for_chart)
 
     
 elif st.session_state.page == "🗺️ Mapa Interativo":
@@ -289,6 +329,7 @@ elif st.session_state.page == "🗺️ Mapa Interativo":
         step=timedelta(days=1)
     )
 
+    max_month_for_chart = slider[1].month
 
     dados_filtrados = dados_ano[
         (dados_ano["DT_NOTIFIC"].dt.date >= slider[0]) & 
