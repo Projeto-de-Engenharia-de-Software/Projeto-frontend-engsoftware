@@ -28,7 +28,13 @@ def get_equipes():
     response = make_authenticated_request('get', url)
 
     if response and response.status_code == 200:
-        df_equipe = pd.DataFrame(response.json())
+        data = response.json()
+
+        # Retorna tabela vazia se não houver equipes
+        if not data:
+            return pd.DataFrame(columns=["Nome da Equipe", "Gestor", "Profissionais"])
+
+        df_equipe = pd.DataFrame(data)
         df_equipe['gestor'] = df_equipe['gestor'].apply(
             lambda x: x['username'] if isinstance(x, dict) else x
         )
@@ -46,7 +52,7 @@ def get_equipes():
         return df_equipe
     else:
         st.error("Erro ao carregar equipes")
-        return pd.DataFrame()
+        return pd.DataFrame(columns=["Nome da Equipe", "Gestor", "Profissionais"])
 
 def equipes(equipes):
     st.title("Equipes")
