@@ -33,6 +33,9 @@ def make_authenticated_request(method, url, headers=None, params=None, json_data
             st.error(f"Método HTTP '{method}' não suportado.")
             return None  # Sai aqui, response não definido
 
+        if response.status_code == 400:
+            return response
+
         response.raise_for_status()
         return response
 
