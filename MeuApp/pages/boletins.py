@@ -1,8 +1,6 @@
 import streamlit as st
 from streamlit.components.v1 import html
 
-st.set_page_config(layout="centered")
-
 st.image("pages/image.png", use_container_width=True)
 
 # Função de callback para salvar o comentário
