@@ -10,8 +10,8 @@ def config():
     new_password = st.text_input("Nova Senha", type="password")
     confirm_new_password = st.text_input("Confirmar Nova Senha", type="password")
 
-    st.subheader("Alterar Nome de Usuário")
-    novo_user = st.text_input("Novo Usuário")  # Ainda não implementado
+    #st.subheader("Alterar Nome de Usuário")
+    #novo_user = st.text_input("Novo Usuário")  # Ainda não implementado
 
     salvar_btn = st.button("Salvar")
     logout_btn = st.button("Fazer Logoff")
