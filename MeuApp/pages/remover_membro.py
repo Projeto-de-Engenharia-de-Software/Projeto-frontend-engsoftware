@@ -1,8 +1,10 @@
 import streamlit as st
-import pandas as pd
+from pages.util import API_BASE_URL, make_authenticated_request
+from pages._login import cookie
 
 st.set_page_config(page_title="Remover Membro", layout="centered")
 
+# Estilo customizado
 st.markdown("""
     <style>
     body {
@@ -10,11 +12,11 @@ st.markdown("""
     }
 
     .title {
-        font-size: 60px;
+        font-size: 50px;
         font-weight: bold;
         text-align: center;
         margin-top: -30px;
-        margin-bottom: 0;
+        margin-bottom: 20px;
     }
 
     .login-box {
@@ -26,65 +28,92 @@ st.markdown("""
         text-align: center;
     }
 
-
-            section[data-testid="stSidebar"] {
+    section[data-testid="stSidebar"] {
         display: none !important;
     }
 
-    /* Remove o botão de recolher/expandir a sidebar (☰) */
     div[data-testid="collapsedControl"] {
         display: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Remover Membro")
+# Autenticação via cookie
+token_cookie = cookie.get("auth_token")
+if token_cookie and 'auth_token' not in st.session_state:
+    st.session_state.auth_token = token_cookie
 
-if "nomes" not in st.session_state:
-    st.error("Dados de membros não encontrados.")
-    st.stop()
+if 'auth_token' not in st.session_state:
+    st.switch_page("pages/_login.py")
 
-nomes = st.session_state["nomes"]
+# Título
+st.markdown("<div class='title'>Remover Membro</div>", unsafe_allow_html=True)
 
-usuario = st.text_input("Digite o nome de usuário para remover")
+# Buscar equipes
+response = make_authenticated_request("get", f"{API_BASE_URL}equipes/")
+if response and response.status_code == 200:
+    equipes = response.json()
+    equipe_opcoes = {f"{eq['nome']} (ID {eq['id']})": eq for eq in equipes}
 
-col1, col2 = st.columns([2,2])
+    equipe_selecionada = st.selectbox("Selecione a equipe", list(equipe_opcoes.keys()))
+    equipe_dados = equipe_opcoes[equipe_selecionada]
+    profissionais = [p['username'] for p in equipe_dados.get("profissionais", [])]
 
-if 'modo_confirmar' not in st.session_state:
-    st.session_state.modo_confirmar = False
+    if profissionais:
+        username = st.text_input("Digite o nome de usuário a remover")
 
+        col1, col2 = st.columns([1, 1])
 
-with col1:
-    if st.button("Remover"):
-        st.session_state.modo_confirmar = True
-        if usuario in nomes["Usuário"].values:
-            st.session_state["confirm_delete"] = usuario
-        else:
-            st.warning("Usuário não encontrado.")
-
-with col2:
-    if st.button("Voltar"):
-        st.session_state.page = "🤝 Equipes"
-        st.switch_page("pages/quadro_geral.py")
-
-
-
-if "confirm_delete" in st.session_state:
-    st.warning(f"Tem certeza que deseja excluir '{st.session_state.confirm_delete}'?")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Sim, excluir"):
-            df = st.session_state["nomes"]
-            df = df[df["Usuário"] != st.session_state["confirm_delete"]]
-            st.session_state["nomes"] = df
-            st.session_state.nomes = df
-            st.success(f"Usuário '{st.session_state.confirm_delete}' removido.")
-            del st.session_state["confirm_delete"]
+        if 'modo_confirmar' not in st.session_state:
             st.session_state.modo_confirmar = False
-            st.rerun()
-    with col2:
-        if st.button("❌ Cancelar"):
-            del st.session_state["confirm_delete"]
-            st.session_state.modo_confirmar = False
-            st.rerun()
-                
+
+        with col1:
+            if st.button("Remover"):
+                if username.strip() in profissionais:
+                    st.session_state.modo_confirmar = True
+                    st.session_state["confirm_delete"] = username
+                else:
+                    st.warning("Usuário não encontrado na equipe selecionada.")
+
+        # Confirmação
+        if st.session_state.get("modo_confirmar") and st.session_state.get("confirm_delete"):
+            st.warning(f"Tem certeza que deseja remover '{st.session_state.confirm_delete}'?")
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("Sim, remover"):
+                    url = f"{API_BASE_URL}equipes/{equipe_dados['id']}/remover-profissional/"
+                    body = {"username": st.session_state.confirm_delete}
+                    post_response = make_authenticated_request("post", url, json_data=body)
+
+                    if post_response and post_response.status_code in [200, 201]:
+                        st.success(f"Usuário '{st.session_state.confirm_delete}' removido com sucesso!")
+                    elif post_response and post_response.status_code == 400:
+                        try:
+                            erro = post_response.json()
+                            if "username" in erro:
+                                st.warning("Usuário não encontrado na equipe.")
+                            else:
+                                st.error(f"Erro: {erro}")
+                        except Exception:
+                            st.error("Erro ao remover o profissional.")
+                    else:
+                        st.error("Erro ao remover o profissional.")
+
+                    # Limpa estado
+                    st.session_state.modo_confirmar = False
+                    del st.session_state["confirm_delete"]
+                    st.rerun()
+            with col2:
+                if st.button("Cancelar"):
+                    st.session_state.modo_confirmar = False
+                    del st.session_state["confirm_delete"]
+                    st.rerun()
+    else:
+        st.info("Esta equipe não possui profissionais para remover.")
+else:
+    st.error("Erro ao carregar equipes.")
+
+st.divider()
+if st.button("Voltar para Equipes"):
+    st.session_state.page = "Equipes"
+    st.switch_page("pages/quadro_geral.py")
