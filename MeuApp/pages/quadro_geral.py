@@ -129,8 +129,19 @@ if st.session_state.page == "📊 Quadro Geral":
         (dados_ano["DT_NOTIFIC"].dt.date <= slider[1])
     ]
 
+    raca = st.sidebar.selectbox(
+        "Selecione a cor ou raça",
+        ["Nenhum", "Branca", "Preta", "Parda", "Amarela", "Indígena", "Ignorado"])
+    
+    dados_raca = dados_filtrados[dados_filtrados["CS_RACA"] == raca ]
 
-    st.dataframe(dados_filtrados) 
+
+    if raca == "Nenhum":
+
+        st.dataframe(dados_filtrados) 
+    
+    else:
+        st.dataframe(dados_raca)
     
 
 
