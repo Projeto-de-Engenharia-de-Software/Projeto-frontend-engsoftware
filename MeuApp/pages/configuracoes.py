@@ -18,6 +18,7 @@ def config():
 
     if logout_btn:
         st.session_state.auth_token = False
+        st.cache_data.clear()
         st.switch_page("pages/_login.py")
         st.rerun()
 

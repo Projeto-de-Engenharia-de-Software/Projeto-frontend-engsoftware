@@ -97,12 +97,7 @@ if col1.button("Entrar", key="btn_entrar_login"):
     else:
         st.warning("Por favor, preencha usuário e senha.", icon="⚠️")
 
-# Esqueci minha senha
-with col2:
-    if st.button("Esqueci minha senha", key="btn_esqueci_login"):
-        st.switch_page("pages/_recuperacao_senha.py")
-
 # Cadastro
-with col3:
+with col2:
     if st.button("Não possui cadastro?", key="btn_cadastro_login"):
         st.switch_page("pages/_cadastrar.py")

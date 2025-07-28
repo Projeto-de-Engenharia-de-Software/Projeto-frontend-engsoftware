@@ -2,7 +2,7 @@ import streamlit as st
 from pages.util import API_BASE_URL, make_authenticated_request
 from pages._login import cookie
 
-st.set_page_config(page_title="Remover Membro", layout="centered")
+st.set_page_config(page_title="Remover Membro", layout="centered", initial_sidebar_state="collapsed")
 
 # Estilo customizado
 st.markdown("""

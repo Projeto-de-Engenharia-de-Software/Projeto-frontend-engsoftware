@@ -2,7 +2,7 @@ import folium
 import numpy as np
 import pandas as pd
 import streamlit as st
-from datetime import datetime
+from datetime import date, datetime
 from datetime import timedelta
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
@@ -19,8 +19,6 @@ st.set_page_config(
     layout="wide"
 )
 
-
-
 # Recupera token salvo no cookie
 token_cookie = cookie.get("auth_token")
 if token_cookie and 'auth_token' not in st.session_state:
@@ -31,10 +29,47 @@ if 'auth_token' not in st.session_state:
     st.switch_page("pages/_login.py")
 
 @st.cache_data
-def carregar_dados():
+def get_quadro():
+    token_cookie = cookie.get("auth_token")
+    if token_cookie and 'auth_token' not in st.session_state:
+        st.session_state.auth_token = token_cookie
 
-    caminho = "pages/sinannet_cnv_violepe231354143_208_128_99.csv"
-    return pd.read_csv(caminho, sep=";", encoding="iso-8859-1", skiprows=3)
+    if 'auth_token' not in st.session_state:
+        st.switch_page("pages/_login.py")
+
+    url = f"{API_BASE_URL}registro-violencia/"
+    response = make_authenticated_request('get', url)
+
+    if response and response.status_code == 200:
+        df_equipe = pd.DataFrame(response.json())
+        df_equipe.drop(columns=['id'], inplace=True)
+
+        return df_equipe
+    else:
+        st.error("Erro ao carregar equipes")
+        return pd.DataFrame()
+
+@st.cache_data
+def carregar_dados_pernambuco():
+    """
+    Carrega a lista de municípios de Pernambuco com suas coordenadas.
+    A função agora retorna um DataFrame limpo, pronto para receber os dados de casos.
+    """
+    try:
+        url = "pages/municipios.csv"
+        df_brasil = pd.read_csv(url)
+        df_pe = df_brasil[df_brasil['codigo_uf'] == 26].copy()
+        
+        # Seleciona e renomeia as colunas. A coluna 'nome' se tornará 'cidade'.
+        df_final = df_pe[['nome', 'latitude', 'longitude']].rename(columns={
+            'nome': 'cidade'
+        })
+        df_final["Casos"] = None
+        return df_final
+
+    except Exception as e:
+        st.error(f"Não foi possível carregar a lista de municípios. Erro: {e}")
+        return pd.DataFrame()
 
 st.markdown("""
     <style>
@@ -53,7 +88,6 @@ if 'page' not in st.session_state:
 
     st.session_state.page = '📊 Quadro Geral'
 
-
 with st.sidebar:
 
     st.markdown("### 🧭 Navegação")
@@ -64,170 +98,60 @@ with st.sidebar:
 if st.session_state.page == "📊 Quadro Geral":
 
     st.markdown("<h1 style='text-align: center;'>Quadro Geral de Casos</h1>", unsafe_allow_html=True)
-    dados = carregar_dados()
-    dados.rename(columns={dados.columns[0]: "Macrorregião"}, inplace=True)
 
-    if 'Total' in dados.columns:
+    dados = get_quadro()
+    dados["DT_NOTIFIC"] = pd.to_datetime(dados["DT_NOTIFIC"])
 
-        dados.drop(columns=['Total'], inplace=True)
-
-    df_meltado = dados.melt(id_vars=["Macrorregião"], var_name="Mês", value_name="Casos")
-
-    df_meltado["Mês"] = df_meltado["Mês"].str.strip()
-    df_meltado["Casos"] = pd.to_numeric(df_meltado["Casos"], errors='coerce')
-
-    mes_para_numero = {
-        "Jan": 1, "Fev": 2, "Mar": 3, "Abr": 4, "Mai": 5, "Jun": 6,
-        "Jul": 7, "Ago": 8, "Set": 9, "Out": 10, "Nov": 11, "Dez": 12
-    }
-    df_meltado["Data"] = df_meltado["Mês"].astype(str).map(lambda m: datetime(2024, mes_para_numero[m], 1))
-
-    ordem_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", 
-                "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-    df_meltado["Mês"] = pd.Categorical(df_meltado["Mês"], categories=ordem_meses, ordered=True)
-
-    st.sidebar.header("Filtros")
-
-    regioes_disponiveis = df_meltado["Macrorregião"].unique().tolist()
-
-    regioes_selecionadas = st.sidebar.multiselect("Selecione as macrorregiões", regioes_disponiveis, default=regioes_disponiveis)
-
-    meses_2024 = [datetime(2024, m, 1) for m in range(1, 13)]
-
-    intervalo_meses = st.sidebar.slider(
-        "Selecione o intervalo de meses",
-        min_value=meses_2024[0],
-        max_value=meses_2024[-1],
-        value=(meses_2024[0], meses_2024[-1]),
-        format="MMM",
-        step=timedelta(days=31)
+    ano = st.sidebar.selectbox(
+        "Selecione o ano de análise", 
+        [2024, 2023, 2022, 2021, 2020]
     )
 
-    df_filtrado = df_meltado[
-        (df_meltado["Macrorregião"].isin(regioes_selecionadas)) &
-        (df_meltado["Data"] >= intervalo_meses[0]) &
-        (df_meltado["Data"] <= intervalo_meses[1])
+    dados_ano = dados[dados["DT_NOTIFIC"].dt.year == ano]
+
+
+    data1 = dados_ano["DT_NOTIFIC"].min().date()
+    data2 = dados_ano["DT_NOTIFIC"].max().date()
+
+
+    slider = st.sidebar.slider(
+        "Selecione o intervalo",
+        min_value=data1,
+        max_value=data2,
+        value=(data1, data2),
+        format="YYYY-MM-DD",
+        step=timedelta(days=1)
+    )
+
+
+    dados_filtrados = dados_ano[
+        (dados_ano["DT_NOTIFIC"].dt.date >= slider[0]) & 
+        (dados_ano["DT_NOTIFIC"].dt.date <= slider[1])
     ]
 
-    st.title("Quadro Geral de Casos de Violência")
-    st.markdown("Este gráfico mostra a distribuição de casos por mês nas macrorregiões de Pernambuco em 2024.")
 
-    grafico = alt.Chart(df_filtrado).mark_line(point=True).encode(
-        x=alt.X("Mês:N", sort=ordem_meses, title="Mês"),
-        y=alt.Y("Casos:Q", title="Número de Casos"),
-        color="Macrorregião:N",
-        tooltip=["Macrorregião", "Mês", "Casos"]
-    ).properties(
-        width=800,
-        height=500,
-        title="Número de Casos por Mês e Macrorregião (2024)"
-    )
+    st.dataframe(dados_filtrados) 
+    
 
-    st.dataframe(df_filtrado)
-
-    st.altair_chart(grafico, use_container_width=True)
-
-    def calcular_variacao(df, inicio, fim):
-
-        resultados = []
-
-        for regiao in regioes_selecionadas:
-
-            df_regiao = df[(df["Macrorregião"] == regiao) & (df["Data"] >= inicio) & (df["Data"] <= fim)]
-
-            if df_regiao.empty:
-
-                continue
-
-            df_regiao = df_regiao.sort_values("Data")
-
-            valor_inicio = df_regiao.iloc[0]["Casos"]
-
-            valor_fim = df_regiao.iloc[-1]["Casos"]
-
-
-            if pd.isna(valor_inicio) or valor_inicio == 0:
-
-                variacao = None
-
-            else:
-
-                variacao = ((valor_fim - valor_inicio) / valor_inicio) * 100
-
-            resultados.append((regiao, variacao))
-
-        return resultados
-
-    variacoes = calcular_variacao(df_filtrado, intervalo_meses[0], intervalo_meses[1])
-
-   
-    st.markdown("### Variação percentual de casos entre o primeiro e último mês selecionados por macrorregião:")
-
-    if not variacoes:
-
-        st.write("Nenhum dado disponível para as regiões e período selecionados.")
-
-    else:
-
-        for regiao, variacao in variacoes:
-
-            if variacao is None:
-
-                texto = f"- **{regiao}**: dados insuficientes para calcular variação."
-
-            else:
-
-                if variacao > 0:
-
-                    texto = f"- **{regiao}**: aumento de {variacao:.2f}% nos casos."
-
-                elif variacao < 0:
-
-                    texto = f"- **{regiao}**: redução de {abs(variacao):.2f}% nos casos."
-
-                else:
-
-                    texto = f"- **{regiao}**: sem variação nos casos."
-
-            st.write(texto)
 
 elif st.session_state.page == "🗺️ Mapa Interativo":
 
     st.markdown("<h1 style='text-align: center;'>Mapa Interativo</h1>", unsafe_allow_html=True)
     st.title("🌡️ Mapa de Calor - Notificações na RMR")
 
-    dados = pd.DataFrame({
-        'Município': [
-            'Recife', 'Olinda', 'Jaboatão dos Guararapes',
-            'Paulista', 'Camaragibe', 'São Lourenço da Mata',
-            'Igarassu', 'Abreu e Lima', 'Cabo de Santo Agostinho',
-            'Moreno', 'Itapissuma', 'Araçoiaba', 'Itamaracá'
-        ],
-        'Latitude': [
-            -8.0476, -7.9986, -8.1127,
-            -7.9408, -8.0237, -7.9907,
-            -7.8286, -7.9111, -8.2822,
-            -8.1082, -7.7758, -7.7883, -7.7425
-        ],
-        'Longitude': [
-            -34.8770, -34.8450, -34.9286,
-            -34.8731, -34.9787, -35.0133,
-            -34.9012, -34.8983, -35.0255,
-            -35.0831, -34.9564, -35.0906, -34.8298
-        ],
-        'Casos': [
-            320, 150, 290,
-            80, 70, 60,
-            50, 45, 110,
-            40, 25, 15, 30
-        ]
-    })
+    casos = get_quadro()
+
+    dados_geo = carregar_dados_pernambuco()
+
+    contagem_de_casos = casos["MUNICIPIO"].value_counts()
+    dados_geo["Casos"] = dados_geo["cidade"].map(contagem_de_casos).fillna(0).astype(int)
+        
 
     heat_data = []
 
-    for _, row in dados.iterrows():
+    for _, row in dados_geo.iterrows():
 
-        heat_data.extend([[row['Latitude'], row['Longitude']]] * row['Casos'])
+        heat_data.extend([[row['latitude'], row['longitude']]] * row['Casos'])
 
  
     m = folium.Map(location=[-8.05, -34.9], zoom_start=10)
@@ -236,11 +160,11 @@ elif st.session_state.page == "🗺️ Mapa Interativo":
     HeatMap(heat_data, radius=20, blur=15, min_opacity=0.3).add_to(m)
 
 
-    for _, row in dados.iterrows():
+    for _, row in dados_geo.iterrows():
 
         folium.Marker(
-            location=[row['Latitude'], row['Longitude']],
-            popup=f"{row['Município']}<br>Casos: {row['Casos']}",
+            location=[row['latitude'], row['longitude']],
+            popup=f"{row['cidade']}<br>Casos: {row['Casos']}",
             icon=folium.Icon(color="blue", icon="info-sign")
         ).add_to(m)
 

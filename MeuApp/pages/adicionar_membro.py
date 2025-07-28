@@ -42,6 +42,11 @@ if response and response.status_code == 200:
         if post_response and post_response.status_code in [200, 201]:
             st.success("Profissional adicionado com sucesso!")
             st.switch_page("pages/quadro_geral.py")
+
+        elif post_response and post_response.status_code == 400:
+            erro = post_response.get("erro")
+            st.error(f"Erro ao adicionar membro: {erro}")
+
         else:
             st.error("Usuário não encontrado.")
 
