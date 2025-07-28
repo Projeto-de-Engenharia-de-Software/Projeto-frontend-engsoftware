@@ -12,6 +12,7 @@ from pages.equipes import equipes, get_equipes
 from pages.util import API_BASE_URL, make_authenticated_request
 import extra_streamlit_components as stx
 from pages._login import cookie
+from pages.boletins import boletin
 
 st.set_page_config(
     page_title="Nexus - Quadro Geral",
@@ -204,7 +205,7 @@ if 'page' not in st.session_state:
 with st.sidebar:
 
     st.markdown("### 🧭 Navegação")
-    escolha = st.radio("Escolha a página:", ["📊 Quadro Geral", "🗺️ Mapa Interativo", "🤝 Equipes", "⚙️ Configurações"], label_visibility="collapsed")
+    escolha = st.radio("Escolha a página:", ["📊 Quadro Geral", "🗺️ Mapa Interativo", "🤝 Equipes","📖 Histórico Boletins", "⚙️ Configurações"], label_visibility="collapsed")
     st.session_state.page = escolha
 
 
@@ -350,6 +351,9 @@ elif st.session_state.page == "⚙️ Configurações":
 
     config()
 
+elif st.session_state.page == "📖 Histórico Boletins":
+
+    boletin()
 
 
 
