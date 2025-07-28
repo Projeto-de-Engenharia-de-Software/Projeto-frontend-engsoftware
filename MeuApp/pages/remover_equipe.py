@@ -1,44 +1,54 @@
-# pages/remover_equipe.py
+# remover_equipe.py
 import streamlit as st
-from pages.util import make_authenticated_request, API_BASE_URL
+from pages.util import API_BASE_URL, make_authenticated_request
 from pages._login import cookie
 
-# Recupera token do cookie, se necessário
+st.set_page_config(page_title="Remover Equipe", layout="centered", initial_sidebar_state="collapsed")
+
+# Oculta o sidebar
+hide_sidebar = """
+    <style>
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+        [data-testid="collapsedControl"] {
+            display: none;
+        }
+    </style>
+"""
+st.markdown(hide_sidebar, unsafe_allow_html=True)
+
+# Garante que o token esteja presente
 token_cookie = cookie.get("auth_token")
 if token_cookie and 'auth_token' not in st.session_state:
     st.session_state.auth_token = token_cookie
 
-# Redireciona se não autenticado
 if 'auth_token' not in st.session_state:
     st.switch_page("pages/_login.py")
 
-st.set_page_config(page_title="Remover Equipe", layout="centered", initial_sidebar_state="collapsed")
-st.title("Remover Equipe")
+# Buscar equipes
+response = make_authenticated_request("get", f"{API_BASE_URL}equipes/")
 
-nome = st.text_input("Nome da equipe que deseja remover")
 
-col1, col2= st.columns(2)
-payload = {"nome": nome}
+if response and response.status_code == 200:
+    equipes = response.json()
+    equipe_opcoes = {f"{eq['nome']} (ID {eq['id']})": eq['id'] for eq in equipes}
+        
+    st.title("Remover Equipe")
 
-with col1:
-    if st.button("Remover Equipe"):
-        if not nome:
-            st.warning("Digite o nome da equipe.")
+    equipe_selecionada = st.selectbox("Selecione a equipe para remover", list(equipe_opcoes.keys()))
+
+    if st.button("Remover"):
+        equipe_id = equipe_opcoes[equipe_selecionada]
+        delete_url = f"{API_BASE_URL}equipes/{equipe_id}/"
+        delete_response = make_authenticated_request("delete", delete_url)
+
+        if delete_response and delete_response.status_code in [200, 204]:
+            st.success(f"Equipe '{equipe_selecionada}' removida com sucesso!")
         else:
-            response = make_authenticated_request(method="delete", url=f"{API_BASE_URL}equipes/", json_data=payload)
+            st.error("Erro ao remover equipe.")
+else:
+    st.error("Erro ao carregar equipes.")
 
-            if response and response.status_code in [200, 204]:
-                st.success("Equipe removida com sucesso!")
-                st.switch_page("pages/quadro_geral.py")
-            elif response is not None:
-                st.error("Erro ao remover equipe.")
-                try:
-                    st.json(response.json())
-                except Exception as e:
-                    st.write(str(e))
-            else:
-                st.error("Erro de conexão com o servidor.")
-
-with col2:
-    if st.button("Voltar"):
-        st.switch_page("pages/quadro_geral.py")
+if st.button("Voltar"):
+    st.switch_page("pages/quadro_geral.py")

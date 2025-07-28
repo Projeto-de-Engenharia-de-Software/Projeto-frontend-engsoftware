@@ -4,6 +4,19 @@ import requests
 from pages.util import API_BASE_URL, make_authenticated_request
 
 st.set_page_config(page_title="Adicionar Equipe", layout="centered", initial_sidebar_state="collapsed")
+
+hide_sidebar = """
+    <style>
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+        [data-testid="collapsedControl"] {
+            display: none;
+        }
+    </style>
+"""
+st.markdown(hide_sidebar, unsafe_allow_html=True)
+
 st.title("Adicionar Nova Equipe")
 
 nome = st.text_input("Nome da Equipe")

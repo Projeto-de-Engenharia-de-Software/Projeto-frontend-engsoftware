@@ -27,7 +27,8 @@ def make_authenticated_request(method, url, headers=None, params=None, json_data
 
         elif method.lower() == 'put':
             response = requests.put(url, headers=auth_headers, json=json_data)
-
+        elif method.lower() == 'delete':
+            response = requests.delete(url, headers=auth_headers)
         else:
             st.error(f"Método HTTP '{method}' não suportado.")
             return None  # Sai aqui, response não definido
